@@ -3,15 +3,33 @@
     "step": {
       "user": {
         "title": "Mining Rig Rentals",
-        "description": "Enter the MRR API key and secret. Every rig of the account becomes its own device with its own sensors.",
+        "description": "Enter the MRR API key and secret. The price entity is used to convert BTC amounts to EUR.",
         "data": {
           "api_key": "API key",
-          "api_secret": "API secret"
+          "api_secret": "API secret",
+          "price_entity": "BTC price entity (EUR)"
         }
       }
     },
     "error": {
       "cannot_connect": "Cannot reach the MRR API.",
+      "no_rigs": "No rigs found for this account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MRR credentials",
+        "description": "Update the API key, secret and the entity used for the BTC to EUR rate.",
+        "data": {
+          "api_key": "API key",
+          "api_secret": "API secret",
+          "price_entity": "BTC price entity (EUR)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the MRR API with these credentials.",
       "no_rigs": "No rigs found for this account."
     }
   }

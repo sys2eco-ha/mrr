@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -17,7 +21,12 @@ RIG_SENSORS = (
     ("credited", "Credited"),
     ("refunds", "Refunds"),
     ("net", "Net"),
+    ("credited_eur", "Credited EUR"),
+    ("refunds_eur", "Refunds EUR"),
+    ("net_eur", "Net EUR"),
 )
+
+EUR_KEYS = {"credited_eur": "credited", "refunds_eur": "refunds", "net_eur": "net"}
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -27,7 +36,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for rig_id in coordinator.data["rigs"]
         for key, label in RIG_SENSORS
     ]
-    entities.append(MrrBalanceSensor(coordinator, entry.entry_id))
+    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance", "Balance", "BTC"))
+    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance_eur", "Balance EUR", "EUR"))
     async_add_entities(entities)
 
 
@@ -51,6 +61,10 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         elif key in ("credited", "refunds", "net"):
             self._attr_native_unit_of_measurement = "BTC"
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited" else None
+        elif key in EUR_KEYS:
+            self._attr_native_unit_of_measurement = "EUR"
+            self._attr_device_class = SensorDeviceClass.MONETARY
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited_eur" else None
 
     @property
     def _rig(self) -> dict:
@@ -59,6 +73,10 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
     @property
     def _earnings(self) -> dict:
         return self.coordinator.data.get("earnings", {}).get(self._rig_id, {})
+
+    @property
+    def _earnings_eur(self) -> dict:
+        return self.coordinator.data.get("earnings_eur", {}).get(self._rig_id, {})
 
     @property
     def device_info(self):
@@ -85,6 +103,8 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             return to_th((rig.get("hashrate") or {}).get("last_5min"))
         if self._key == "advertised":
             return to_th((rig.get("hashrate") or {}).get("advertised"))
+        if self._key in EUR_KEYS:
+            return self._earnings_eur.get(EUR_KEYS[self._key])
         entry = self._earnings
         if not entry:
             return None
@@ -111,7 +131,7 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             "min_hours": rig.get("minhours"),
             "max_hours": rig.get("maxhours"),
         }
-        if self._key in ("credited", "refunds", "net"):
+        if self._key in ("credited", "refunds", "net", "credited_eur", "refunds_eur", "net_eur"):
             entry = self._earnings
             attributes.update(
                 {
@@ -128,11 +148,14 @@ class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, entry_id):
+    def __init__(self, coordinator, entry_id, key, label, unit):
         super().__init__(coordinator)
-        self._attr_unique_id = f"{entry_id}_balance_btc"
-        self._attr_name = "Balance"
-        self._attr_native_unit_of_measurement = "BTC"
+        self._key = key
+        self._attr_unique_id = f"{entry_id}_{key}"
+        self._attr_name = label
+        self._attr_native_unit_of_measurement = unit
+        if unit == "EUR":
+            self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
             name="Mining Rig Rentals",
@@ -141,4 +164,4 @@ class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return self.coordinator.data.get("balance")
+        return self.coordinator.data.get(self._key)

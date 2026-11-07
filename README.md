@@ -17,13 +17,16 @@ Per rig:
 | Credited | BTC | Sum of credits for this rig |
 | Refunds | BTC | Sum of refunds for this rig |
 | Net | BTC | Credited minus refunds |
+| Credited EUR | EUR | Credited converted at the configured BTC rate |
+| Refunds EUR | EUR | Refunds converted |
+| Net EUR | EUR | Net converted |
 
 Attributes:
 
 - Status and hashrate sensors: `rig_id`, `owner`, `algorithm`, `online`, `rented`, `pool_status`, `region`, `devices`, `min_hours`, `max_hours`.
 - Earnings sensors: `transactions`, `pending`, `last_transaction`.
 
-Account level: one **Balance** sensor with the confirmed BTC balance.
+Account level: **Balance** in BTC and **Balance EUR**.
 
 ## Requirements
 
@@ -61,6 +64,14 @@ Endpoints used:
 | `/rig/mine` | every rig of the account, all algorithms |
 | `/account/balance` | confirmed and unconfirmed balances |
 | `/account/transactions` | credits and refunds, grouped per rig |
+
+## EUR conversion
+
+BTC amounts are converted using any entity that reports a BTC price in EUR. The default is `sensor.btc_kaina_eur`; change it when adding the integration or later through **Configure**. If the entity is missing or `unknown`, the EUR sensors report `unknown` and the BTC sensors keep working.
+
+## Updating credentials
+
+Open **Mining Rig Rentals** in *Settings → Devices & services* and select **Configure** to replace the API key or secret, or to point the integration at a different price entity. The integration reloads immediately.
 
 ## Notes
 
