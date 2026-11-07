@@ -18,6 +18,8 @@ RIG_SENSORS = (
     ("advertised", "Advertised hashrate"),
     ("last_5min", "Hashrate 5 min"),
     ("price", "Price"),
+    ("price_btc_day", "Price per day BTC"),
+    ("price_eur_day", "Price per day EUR"),
     ("credited", "Credited"),
     ("refunds", "Refunds"),
     ("net", "Net"),
@@ -59,6 +61,13 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         elif key == "price":
             self._attr_native_unit_of_measurement = "BTC/TH/d"
             self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif key == "price_btc_day":
+            self._attr_native_unit_of_measurement = "BTC/d"
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif key == "price_eur_day":
+            self._attr_native_unit_of_measurement = "EUR/d"
+            self._attr_device_class = SensorDeviceClass.MONETARY
+            self._attr_state_class = SensorStateClass.MEASUREMENT
         elif key in ("credited", "refunds", "net"):
             self._attr_native_unit_of_measurement = "BTC"
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited" else None
@@ -96,6 +105,16 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             return (rig.get("status") or {}).get("status")
         if self._key == "price":
             return rig_price(rig)
+        if self._key in ("price_btc_day", "price_eur_day"):
+            unit_price = rig_price(rig)
+            hashrate = to_th((rig.get("hashrate") or {}).get("advertised"))
+            if unit_price is None or not hashrate:
+                return None
+            per_day = unit_price * hashrate
+            if self._key == "price_btc_day":
+                return round(per_day, 8)
+            rate = self.coordinator.data.get("btc_eur")
+            return round(per_day * rate, 2) if rate else None
         if self._key == "last_5min":
             return to_th((rig.get("hashrate") or {}).get("last_5min"))
         if self._key == "advertised":
