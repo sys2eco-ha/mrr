@@ -1,7 +1,7 @@
 {
   "domain": "mrr",
   "name": "Mining Rig Rentals",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "documentation": "https://github.com/sys2eco-ha/mrr",
   "issue_tracker": "https://github.com/sys2eco-ha/mrr/issues",
   "codeowners": ["@sys2eco-ha"],

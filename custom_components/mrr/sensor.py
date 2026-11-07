@@ -151,7 +151,8 @@ class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, entry_id, key, label, unit):
         super().__init__(coordinator)
         self._key = key
-        self._attr_unique_id = f"{entry_id}_{key}"
+        unique = "balance_btc" if key == "balance" else key
+        self._attr_unique_id = f"{entry_id}_{unique}"
         self._attr_name = label
         self._attr_native_unit_of_measurement = unit
         if unit == "EUR":
