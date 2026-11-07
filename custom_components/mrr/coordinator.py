@@ -148,24 +148,9 @@ class MrrCoordinator(DataUpdateCoordinator):
             data["balance"] = balance_btc(balance)
             data["earnings"] = earnings(transactions)
 
-        rate = self._btc_rate()
-        data["rate"] = rate
-        if rate:
-            data["balance_eur"] = round(data["balance"] * rate, 2) if data["balance"] is not None else None
-            data["earnings_eur"] = {
-                rig_id: {
-                    "credited": round(entry["credited"] * rate, 2),
-                    "refunds": round(entry["refunds"] * rate, 2),
-                    "net": round(entry["net"] * rate, 2),
-                }
-                for rig_id, entry in data["earnings"].items()
-            }
-        else:
-            data["balance_eur"] = None
-            data["earnings_eur"] = {}
         return data
 
-    def _btc_rate(self) -> float | None:
+    def btc_rate(self) -> float | None:
         """Return the configured BTC price in EUR."""
         state = self.hass.states.get(self.price_entity)
         if state is None or state.state in ("unknown", "unavailable"):

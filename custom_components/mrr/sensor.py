@@ -104,7 +104,9 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         if self._key == "advertised":
             return to_th((rig.get("hashrate") or {}).get("advertised"))
         if self._key in EUR_KEYS:
-            return self._earnings_eur.get(EUR_KEYS[self._key])
+            base = self._earnings.get(EUR_KEYS[self._key])
+            rate = self.coordinator.btc_rate()
+            return round(base * rate, 2) if base is not None and rate else None
         entry = self._earnings
         if not entry:
             return None
@@ -165,4 +167,8 @@ class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return self.coordinator.data.get(self._key)
+        value = self.coordinator.data.get(self._key)
+        if self._key == "balance":
+            return value
+        rate = self.coordinator.btc_rate()
+        return round(value * rate, 2) if value is not None and rate else None
