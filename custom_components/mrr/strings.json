@@ -18,17 +18,31 @@
   "options": {
     "step": {
       "init": {
-        "title": "MRR credentials",
-        "description": "Update the API key and secret.",
+        "title": "MRR nustatymai",
+        "menu_options": {
+          "credentials": "Raktai",
+          "power": "Elektra"
+        }
+      },
+      "credentials": {
+        "title": "MRR raktai",
+        "description": "Įvesk naują API key ir secret.",
         "data": {
           "api_key": "API key",
           "api_secret": "API secret"
         }
+      },
+      "power": {
+        "title": "Elektra",
+        "description": "Kiekvienam rigui: galios skaitiklio entity (W) ir elektros kaina EUR/kWh. Tuščias laukas – nenaudoti."
       }
     },
     "error": {
-      "cannot_connect": "Cannot reach the MRR API with these credentials.",
-      "no_rigs": "No rigs found for this account."
+      "cannot_connect": "Nepavyksta prisijungti prie MRR su šiais raktais.",
+      "no_rigs": "Šiame accounte nerasta rigų."
+    },
+    "abort": {
+      "single_instance_allowed": "MRR jau sukonfigūruota."
     }
   }
 }

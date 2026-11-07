@@ -26,6 +26,10 @@ RIG_SENSORS = (
     ("credited_eur", "Įskaityta EUR"),
     ("refunds_eur", "Grąžinta EUR"),
     ("net_eur", "Grynosios EUR"),
+    ("power", "Galios skaitiklis"),
+    ("power_price", "Elektros kaina"),
+    ("power_cost", "Elektra EUR/d"),
+    ("profit", "Pelnas EUR/d"),
 )
 
 EUR_KEYS = {"credited_eur": "credited", "refunds_eur": "refunds", "net_eur": "net"}
@@ -75,6 +79,19 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             self._attr_native_unit_of_measurement = "EUR"
             self._attr_device_class = SensorDeviceClass.MONETARY
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited_eur" else None
+        elif key == "power":
+            self._attr_native_unit_of_measurement = "W"
+            self._attr_device_class = SensorDeviceClass.POWER
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif key == "power_price":
+            self._attr_native_unit_of_measurement = "EUR/kWh"
+            self._attr_device_class = SensorDeviceClass.MONETARY
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+            self._attr_icon = "mdi:flash"
+        elif key in ("power_cost", "profit"):
+            self._attr_native_unit_of_measurement = "EUR/d"
+            self._attr_device_class = SensorDeviceClass.MONETARY
+            self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def _rig(self) -> dict:
@@ -101,6 +118,20 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         rig = self._rig
+        costs = self.coordinator.data.get("costs", {}).get(self._rig_id, {})
+        if self._key == "power":
+            return costs.get("power")
+        if self._key == "power_price":
+            return costs.get("price")
+        if self._key == "power_cost":
+            return costs.get("cost")
+        if self._key == "profit":
+            rate = self.coordinator.data.get("btc_eur")
+            net = self._earnings.get("net")
+            cost = costs.get("cost")
+            if net is None or not rate or cost is None:
+                return None
+            return round(net * rate - cost, 2)
         if self._key == "status":
             return (rig.get("status") or {}).get("status")
         if self._key == "price":

@@ -121,6 +121,7 @@ class MrrCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self.api_key = entry.data[CONF_API_KEY]
         self.api_secret = entry.data[CONF_API_SECRET]
+        self.rig_settings = entry.options.get("rigs", {}) or {}
         self.btc_eur: float | None = None
 
     async def _async_update_data(self) -> dict:
@@ -155,4 +156,26 @@ class MrrCoordinator(DataUpdateCoordinator):
         else:
             data["balance"] = balance_btc(balance)
             data["earnings"] = earnings(transactions)
+
+        data["costs"] = {
+            rig_id: self._cost_for(rig_id) for rig_id in data["rigs"]
+        }
         return data
+
+    def _cost_for(self, rig_id: str) -> dict:
+        """Read the rig power sensor and compute the daily electricity cost."""
+        settings = self.rig_settings.get(rig_id) or {}
+        entity = settings.get("power_entity")
+        price = settings.get("price")
+        power = None
+        if entity:
+            state = self.hass.states.get(entity)
+            if state is not None and state.state not in ("unknown", "unavailable"):
+                try:
+                    power = float(state.state)
+                except ValueError:
+                    power = None
+        cost = None
+        if power is not None and price:
+            cost = round(power / 1000 * 24 * float(price), 2)
+        return {"power": power, "price": price, "cost": cost}

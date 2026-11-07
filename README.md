@@ -24,6 +24,10 @@ Per rig:
 | Grąžinta EUR | EUR | The same in EUR |
 | Grynosios BTC | BTC | Credited minus refunds |
 | Grynosios EUR | EUR | The same in EUR |
+| Galios skaitiklis | W | Power reported by the meter you assign to this rig |
+| Elektros kaina | EUR/kWh | Electricity price you set for this rig |
+| Elektra EUR/d | EUR/d | Daily electricity cost |
+| Pelnas EUR/d | EUR/d | Net earnings in EUR minus the daily electricity cost |
 
 Attributes:
 
@@ -70,6 +74,15 @@ Endpoints used:
 | `/account/transactions` | credits and refunds, grouped per rig |
 
 The BTC price comes from `api.coinbase.com`, with `api.coingecko.com` as a fallback.
+
+## Electricity per rig
+
+Open **Mining Rig Rentals → Configure → Elektra**. For every rig you can set:
+
+- **Galios skaitiklis** — any sensor that reports power in **W** (for example a Shelly or a DIN meter).
+- **Elektros kaina** — the price in **EUR/kWh** for that rig.
+
+Leave both empty to skip the calculation. When set, the integration computes `Elektra EUR/d = W / 1000 * 24 * kaina` and `Pelnas EUR/d = Grynosios EUR - Elektra EUR/d`, so you can see whether a rig is worth running.
 
 ## EUR conversion
 
