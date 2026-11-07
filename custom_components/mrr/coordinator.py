@@ -175,7 +175,7 @@ class MrrCoordinator(DataUpdateCoordinator):
                     power = float(state.state)
                 except ValueError:
                     power = None
-        cost = None
-        if power is not None and price:
-            cost = round(power / 1000 * 24 * float(price), 2)
+        power = power if power is not None else 0.0
+        price = float(price) if price else 0.0
+        cost = round(power / 1000 * 24 * price, 2)
         return {"power": power, "price": price, "cost": cost}

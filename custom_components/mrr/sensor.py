@@ -128,8 +128,8 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         if self._key == "profit":
             rate = self.coordinator.data.get("btc_eur")
             net = self._earnings.get("net")
-            cost = costs.get("cost")
-            if net is None or not rate or cost is None:
+            cost = costs.get("cost") or 0.0
+            if net is None or not rate:
                 return None
             return round(net * rate - cost, 2)
         if self._key == "status":

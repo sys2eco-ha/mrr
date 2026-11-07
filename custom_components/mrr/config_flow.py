@@ -6,7 +6,15 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
+from homeassistant.helpers.selector import (
+    EntitySelector,
+    EntitySelectorConfig,
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    TextSelector,
+    TextSelectorConfig,
+)
 
 from .api import MrrError, rigs_mine
 from .const import CONF_API_KEY, CONF_API_SECRET, DOMAIN
@@ -63,6 +71,8 @@ class MrrConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class MrrOptionsFlow(config_entries.OptionsFlow):
     """Update credentials or the per-rig power settings."""
 
+    _rig_id: str | None = None
+
     async def async_step_init(self, user_input=None):
         """Choose what to change."""
         return self.async_show_menu(step_id="init", menu_options=["credentials", "power"])
@@ -114,30 +124,58 @@ class MrrOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_power(self, user_input=None):
-        """Set the power sensor and the electricity price for every rig."""
+        """Pick the rig to configure."""
         rigs = self._rigs
+        if not rigs:
+            return self.async_abort(reason="no_rigs")
+        if user_input is not None:
+            self._rig_id = user_input["rig"]
+            return await self.async_step_rig_power()
+        options = [
+            SelectOptionDict(
+                value=rig_id,
+                label=f"{(rig.get('name') or rig_id).split('|')[0].strip()[:40]} ({rig_id})",
+            )
+            for rig_id, rig in rigs.items()
+        ]
+        return self.async_show_form(
+            step_id="power",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("rig"): SelectSelector(
+                        SelectSelectorConfig(options=options)
+                    )
+                }
+            ),
+        )
+
+    async def async_step_rig_power(self, user_input=None):
+        """Set the meter and the price for one rig."""
+        current = self._settings.get(self._rig_id, {})
         if user_input is not None:
             settings = dict(self._settings)
-            for rig_id in rigs:
-                power_value = (user_input.get(f"power_{rig_id}") or "").strip()
-                price_value = user_input.get(f"price_{rig_id}")
-                settings[rig_id] = {
-                    "power_entity": power_value or None,
-                    "price": float(price_value) if price_value else None,
-                }
+            meter = user_input.get("power_entity") or None
+            price = user_input.get("price")
+            settings[self._rig_id] = {
+                "power_entity": meter,
+                "price": float(price) if price not in (None, "") else None,
+            }
             return self.async_create_entry(data={CONF_RIGS: settings})
-        fields = {}
-        for rig_id, rig in rigs.items():
-            current = self._settings.get(rig_id, {})
-            label = (rig.get("name") or rig_id).split("|")[0].strip()[:32]
-            fields[
-                vol.Optional(
-                    f"power_{rig_id}", default=current.get("power_entity") or ""
-                )
-            ] = str
-            fields[
-                vol.Optional(
-                    f"price_{rig_id}", default=current.get("price") or 0.0
-                )
-            ] = vol.Coerce(float)
-        return self.async_show_form(step_id="power", data_schema=vol.Schema(fields))
+        return self.async_show_form(
+            step_id="rig_power",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("power_entity"): EntitySelector(
+                        EntitySelectorConfig(domain="sensor")
+                    ),
+                    vol.Optional(
+                        "price", default=current.get("price") or 0.0
+                    ): vol.Coerce(float),
+                }
+            ),
+            description_placeholders={
+                "rig": (self._rigs.get(self._rig_id, {}).get("name") or self._rig_id)
+                .split("|")[0]
+                .strip()[:40]
+            },
+        )

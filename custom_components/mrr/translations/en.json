@@ -34,7 +34,18 @@
       },
       "power": {
         "title": "Elektra",
-        "description": "Kiekvienam rigui: galios skaitiklio entity (W) ir elektros kaina EUR/kWh. Tuščias laukas – nenaudoti."
+        "description": "Pasirink rigą, kuriam nustatysi skaitiklį ir kainą.",
+        "data": {
+          "rig": "Rigas"
+        }
+      },
+      "rig_power": {
+        "title": "Elektra",
+        "description": "Rigas: {rig}. Pasirink galios skaitiklį (W) ir įrašyk elektros kainą EUR/kWh. Palik tuščią, jei nenaudoji.",
+        "data": {
+          "power_entity": "Galios skaitiklis",
+          "price": "Elektros kaina EUR/kWh"
+        }
       }
     },
     "error": {
@@ -42,7 +53,7 @@
       "no_rigs": "Šiame accounte nerasta rigų."
     },
     "abort": {
-      "single_instance_allowed": "MRR jau sukonfigūruota."
+      "no_rigs": "Nerasta rigų."
     }
   }
 }
