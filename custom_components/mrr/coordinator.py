@@ -12,13 +12,12 @@ from .api import (
     MrrError,
     account_balance,
     account_transactions,
+    btc_eur_price,
     rigs_mine,
 )
 from .const import (
     CONF_API_KEY,
     CONF_API_SECRET,
-    CONF_PRICE_ENTITY,
-    DEFAULT_PRICE_ENTITY,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -110,7 +109,7 @@ def normalise(payload) -> dict:
 
 
 class MrrCoordinator(DataUpdateCoordinator):
-    """Poll every rig of one MRR account."""
+    """Poll every rig of one MRR account and the BTC price."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         super().__init__(
@@ -122,7 +121,7 @@ class MrrCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self.api_key = entry.data[CONF_API_KEY]
         self.api_secret = entry.data[CONF_API_SECRET]
-        self.price_entity = entry.data.get(CONF_PRICE_ENTITY) or DEFAULT_PRICE_ENTITY
+        self.btc_eur: float | None = None
 
     async def _async_update_data(self) -> dict:
         try:
@@ -132,8 +131,17 @@ class MrrCoordinator(DataUpdateCoordinator):
         except MrrError as err:
             raise UpdateFailed(str(err)) from err
 
-        rigs = normalise(payload)
-        data = {"rigs": rigs, "earnings": {}, "balance": None}
+        data = {
+            "rigs": normalise(payload),
+            "earnings": {},
+            "balance": None,
+            "btc_eur": self.btc_eur,
+        }
+
+        price = await self.hass.async_add_executor_job(btc_eur_price)
+        if price:
+            self.btc_eur = price
+            data["btc_eur"] = price
 
         try:
             balance = await self.hass.async_add_executor_job(
@@ -147,15 +155,4 @@ class MrrCoordinator(DataUpdateCoordinator):
         else:
             data["balance"] = balance_btc(balance)
             data["earnings"] = earnings(transactions)
-
         return data
-
-    def btc_rate(self) -> float | None:
-        """Return the configured BTC price in EUR."""
-        state = self.hass.states.get(self.price_entity)
-        if state is None or state.state in ("unknown", "unavailable"):
-            return None
-        try:
-            return float(state.state)
-        except ValueError:
-            return None

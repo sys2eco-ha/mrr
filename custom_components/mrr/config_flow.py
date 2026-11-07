@@ -9,13 +9,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig
 
 from .api import MrrError, rigs_mine
-from .const import (
-    CONF_API_KEY,
-    CONF_API_SECRET,
-    CONF_PRICE_ENTITY,
-    DEFAULT_PRICE_ENTITY,
-    DOMAIN,
-)
+from .const import CONF_API_KEY, CONF_API_SECRET, DOMAIN
 from .coordinator import normalise
 
 
@@ -42,12 +36,7 @@ class MrrConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     return self.async_create_entry(
                         title="Mining Rig Rentals",
-                        data={
-                            CONF_API_KEY: api_key,
-                            CONF_API_SECRET: api_secret,
-                            CONF_PRICE_ENTITY: user_input.get(CONF_PRICE_ENTITY)
-                            or DEFAULT_PRICE_ENTITY,
-                        },
+                        data={CONF_API_KEY: api_key, CONF_API_SECRET: api_secret},
                     )
         return self.async_show_form(
             step_id="user",
@@ -57,7 +46,6 @@ class MrrConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_API_SECRET): TextSelector(
                         TextSelectorConfig(type="password")
                     ),
-                    vol.Optional(CONF_PRICE_ENTITY, default=DEFAULT_PRICE_ENTITY): str,
                 }
             ),
             errors=errors,
@@ -92,12 +80,7 @@ class MrrOptionsFlow(config_entries.OptionsFlow):
                 else:
                     self.hass.config_entries.async_update_entry(
                         entry,
-                        data={
-                            CONF_API_KEY: api_key,
-                            CONF_API_SECRET: api_secret,
-                            CONF_PRICE_ENTITY: user_input.get(CONF_PRICE_ENTITY)
-                            or DEFAULT_PRICE_ENTITY,
-                        },
+                        data={CONF_API_KEY: api_key, CONF_API_SECRET: api_secret},
                     )
                     await self.hass.config_entries.async_reload(entry.entry_id)
                     return self.async_create_entry(data={})
@@ -111,10 +94,6 @@ class MrrOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(CONF_API_SECRET): TextSelector(
                         TextSelectorConfig(type="password")
                     ),
-                    vol.Optional(
-                        CONF_PRICE_ENTITY,
-                        default=entry.data.get(CONF_PRICE_ENTITY, DEFAULT_PRICE_ENTITY),
-                    ): str,
                 }
             ),
             errors=errors,

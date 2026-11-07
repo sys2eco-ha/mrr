@@ -3,11 +3,10 @@
     "step": {
       "user": {
         "title": "Mining Rig Rentals",
-        "description": "Enter the MRR API key and secret. The price entity is used to convert BTC amounts to EUR.",
+        "description": "Enter the MRR API key and secret. Rigs and the BTC price in EUR are polled every 10 minutes.",
         "data": {
           "api_key": "API key",
-          "api_secret": "API secret",
-          "price_entity": "BTC price entity (EUR)"
+          "api_secret": "API secret"
         }
       }
     },
@@ -20,11 +19,10 @@
     "step": {
       "init": {
         "title": "MRR credentials",
-        "description": "Update the API key, secret and the entity used for the BTC to EUR rate.",
+        "description": "Update the API key and secret.",
         "data": {
           "api_key": "API key",
-          "api_secret": "API secret",
-          "price_entity": "BTC price entity (EUR)"
+          "api_secret": "API secret"
         }
       }
     },

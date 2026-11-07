@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from homeassistant.core import callback
-from homeassistant.helpers.event import async_track_state_change_event
-
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -41,6 +38,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ]
     entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance", "Balance", "BTC"))
     entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance_eur", "Balance EUR", "EUR"))
+    entities.append(MrrPriceSensor(coordinator, entry.entry_id))
     async_add_entities(entities)
 
 
@@ -69,19 +67,6 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             self._attr_device_class = SensorDeviceClass.MONETARY
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited_eur" else None
 
-    async def async_added_to_hass(self) -> None:
-        """Re-render when the BTC price entity changes."""
-        await super().async_added_to_hass()
-        self.async_on_remove(
-            async_track_state_change_event(
-                self.hass, [self.coordinator.price_entity], self._price_changed
-            )
-        )
-
-    @callback
-    def _price_changed(self, event) -> None:
-        self.async_write_ha_state()
-
     @property
     def _rig(self) -> dict:
         return self.coordinator.data["rigs"].get(self._rig_id, {})
@@ -89,10 +74,6 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
     @property
     def _earnings(self) -> dict:
         return self.coordinator.data.get("earnings", {}).get(self._rig_id, {})
-
-    @property
-    def _earnings_eur(self) -> dict:
-        return self.coordinator.data.get("earnings_eur", {}).get(self._rig_id, {})
 
     @property
     def device_info(self):
@@ -119,13 +100,14 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             return to_th((rig.get("hashrate") or {}).get("last_5min"))
         if self._key == "advertised":
             return to_th((rig.get("hashrate") or {}).get("advertised"))
-        if self._key in EUR_KEYS:
-            base = self._earnings.get(EUR_KEYS[self._key])
-            rate = self.coordinator.btc_rate()
-            return round(base * rate, 2) if base is not None and rate else None
+
         entry = self._earnings
         if not entry:
             return None
+        if self._key in EUR_KEYS:
+            rate = self.coordinator.data.get("btc_eur")
+            base = entry.get(EUR_KEYS[self._key])
+            return round(base * rate, 2) if base is not None and rate else None
         if self._key == "credited":
             return round(entry.get("credited", 0.0), 8)
         if self._key == "refunds":
@@ -162,7 +144,7 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
 
 
 class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
-    """Confirmed BTC balance of the account."""
+    """Confirmed BTC balance of the account, in BTC or EUR."""
 
     _attr_has_entity_name = True
 
@@ -181,23 +163,33 @@ class MrrBalanceSensor(CoordinatorEntity, SensorEntity):
             manufacturer="Mining Rig Rentals",
         )
 
-    async def async_added_to_hass(self) -> None:
-        """Re-render when the BTC price entity changes."""
-        await super().async_added_to_hass()
-        self.async_on_remove(
-            async_track_state_change_event(
-                self.hass, [self.coordinator.price_entity], self._price_changed
-            )
-        )
+    @property
+    def native_value(self):
+        value = self.coordinator.data.get("balance")
+        if self._key == "balance":
+            return value
+        rate = self.coordinator.data.get("btc_eur")
+        return round(value * rate, 2) if value is not None and rate else None
 
-    @callback
-    def _price_changed(self, event) -> None:
-        self.async_write_ha_state()
+
+class MrrPriceSensor(CoordinatorEntity, SensorEntity):
+    """BTC price in EUR used for the conversions."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator, entry_id):
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry_id}_btc_eur"
+        self._attr_name = "BTC price"
+        self._attr_native_unit_of_measurement = "EUR"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_icon = "mdi:currency-btc"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry_id)},
+            name="Mining Rig Rentals",
+            manufacturer="Mining Rig Rentals",
+        )
 
     @property
     def native_value(self):
-        value = self.coordinator.data.get(self._key)
-        if self._key == "balance":
-            return value
-        rate = self.coordinator.btc_rate()
-        return round(value * rate, 2) if value is not None and rate else None
+        return self.coordinator.data.get("btc_eur")

@@ -26,7 +26,7 @@ Attributes:
 - Status and hashrate sensors: `rig_id`, `owner`, `algorithm`, `online`, `rented`, `pool_status`, `region`, `devices`, `min_hours`, `max_hours`.
 - Earnings sensors: `transactions`, `pending`, `last_transaction`.
 
-Account level: **Balance** in BTC and **Balance EUR**.
+Account level: **Balance** in BTC, **Balance EUR**, and **BTC price** (EUR).
 
 ## Requirements
 
@@ -65,17 +65,19 @@ Endpoints used:
 | `/account/balance` | confirmed and unconfirmed balances |
 | `/account/transactions` | credits and refunds, grouped per rig |
 
+The BTC price comes from `api.coinbase.com`, with `api.coingecko.com` as a fallback.
+
 ## EUR conversion
 
-BTC amounts are converted using any entity that reports a BTC price in EUR. The default is `sensor.btc_kaina_eur`; change it when adding the integration or later through **Configure**. If the entity is missing or `unknown`, the EUR sensors report `unknown` and the BTC sensors keep working.
+The integration fetches the BTC price in EUR itself, in the same cycle as the rig data: Coinbase spot first, CoinGecko as a fallback. No external price entity is required. If both sources fail, the last known rate is kept; the BTC sensors keep working regardless.
 
 ## Updating credentials
 
-Open **Mining Rig Rentals** in *Settings → Devices & services* and select **Configure** to replace the API key or secret, or to point the integration at a different price entity. The integration reloads immediately.
+Open **Mining Rig Rentals** in *Settings → Devices & services* and select **Configure** to replace the API key or secret. The integration reloads immediately.
 
 ## Notes
 
-- Data is polled every 5 minutes. MRR rate limits the API; do not lower this without reason.
+- Rigs and the BTC price are polled every 10 minutes.
 - `Credited`, `Refunds` and `Net` sum the transactions the API returns in one response (currently up to 100). They cover that window, not the lifetime of the rig.
 - Earnings are grouped by the `rig` field of each transaction. A rig that no longer exists in the account has no device, so its transactions are not shown.
 - Disabled rigs are listed with the status `disabled`.

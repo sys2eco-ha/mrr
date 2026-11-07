@@ -9,7 +9,7 @@ import time
 import urllib.error
 import urllib.request
 
-from .const import API_BASE
+from .const import API_BASE, PRICE_URLS
 
 
 class MrrError(Exception):
@@ -73,3 +73,20 @@ def account_profile(api_key: str, api_secret: str):
 def account_transactions(api_key: str, api_secret: str):
     """Return the account transactions."""
     return _request("/account/transactions", api_key=api_key, api_secret=api_secret)
+
+
+def btc_eur_price() -> float | None:
+    """Return the current BTC price in EUR, or None when unavailable."""
+    for url in PRICE_URLS:
+        try:
+            with urllib.request.urlopen(url, timeout=15) as response:
+                payload = json.loads(response.read().decode("utf-8", "replace"))
+        except (urllib.error.HTTPError, OSError, ValueError):
+            continue
+        try:
+            if "data" in payload:
+                return float(payload["data"]["amount"])
+            return float(payload["bitcoin"]["eur"])
+        except (KeyError, TypeError, ValueError):
+            continue
+    return None
