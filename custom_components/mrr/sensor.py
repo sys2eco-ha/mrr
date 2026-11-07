@@ -74,14 +74,13 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         elif key == "price_eur_day":
             self._attr_native_unit_of_measurement = "EUR/d"
             self._attr_device_class = SensorDeviceClass.MONETARY
-            self._attr_state_class = SensorStateClass.MEASUREMENT
         elif key in ("credited", "refunds", "net"):
             self._attr_native_unit_of_measurement = "BTC"
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited" else None
         elif key in EUR_KEYS:
             self._attr_native_unit_of_measurement = "EUR"
             self._attr_device_class = SensorDeviceClass.MONETARY
-            self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited_eur" else None
+            self._attr_state_class = SensorStateClass.TOTAL if key == "credited_eur" else None
         elif key == "rented_until":
             self._attr_device_class = SensorDeviceClass.TIMESTAMP
         elif key == "power":
@@ -91,12 +90,10 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         elif key == "power_price":
             self._attr_native_unit_of_measurement = "EUR/kWh"
             self._attr_device_class = SensorDeviceClass.MONETARY
-            self._attr_state_class = SensorStateClass.MEASUREMENT
             self._attr_icon = "mdi:flash"
         elif key in ("power_cost", "profit"):
             self._attr_native_unit_of_measurement = "EUR/d"
             self._attr_device_class = SensorDeviceClass.MONETARY
-            self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def _rig(self) -> dict:
