@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mining Rig Rentals",
+        "description": "Enter the MRR API key and secret. Every rig of the account becomes its own device with its own sensors.",
+        "data": {
+          "api_key": "API key",
+          "api_secret": "API secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the MRR API.",
+      "no_rigs": "No rigs found for this account."
+    }
+  }
+}

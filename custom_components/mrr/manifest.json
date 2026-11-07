@@ -1,0 +1,12 @@
+{
+  "domain": "mrr",
+  "name": "Mining Rig Rentals",
+  "version": "0.2.0",
+  "documentation": "https://github.com/sys2eco-ha/mrr",
+  "issue_tracker": "https://github.com/sys2eco-ha/mrr/issues",
+  "codeowners": ["@sys2eco-ha"],
+  "config_flow": true,
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": []
+}
