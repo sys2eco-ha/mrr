@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -15,6 +17,7 @@ from .coordinator import rig_price, to_th
 
 RIG_SENSORS = (
     ("status", "Būsena"),
+    ("rented_until", "Išnuomota iki"),
     ("advertised", "Skelbiamas hashrate"),
     ("last_5min", "Hashrate (5 min.)"),
     ("price", "Kaina BTC/TH/d"),
@@ -79,6 +82,8 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             self._attr_native_unit_of_measurement = "EUR"
             self._attr_device_class = SensorDeviceClass.MONETARY
             self._attr_state_class = SensorStateClass.TOTAL_INCREASING if key == "credited_eur" else None
+        elif key == "rented_until":
+            self._attr_device_class = SensorDeviceClass.TIMESTAMP
         elif key == "power":
             self._attr_native_unit_of_measurement = "W"
             self._attr_device_class = SensorDeviceClass.POWER
@@ -134,6 +139,15 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             return round(net * rate - cost, 2)
         if self._key == "status":
             return (rig.get("status") or {}).get("status")
+        if self._key == "rented_until":
+            status = rig.get("status") or {}
+            if not status.get("rented"):
+                return None
+            try:
+                hours = float(status.get("hours"))
+            except (TypeError, ValueError):
+                return None
+            return datetime.now(UTC) + timedelta(hours=hours)
         if self._key == "price":
             return rig_price(rig)
         if self._key in ("price_btc_day", "price_eur_day"):
