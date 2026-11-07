@@ -6,27 +6,31 @@ Every rig becomes its own Home Assistant device with its own sensors. Rigs are n
 
 ## What it provides
 
+Sensor names are in Lithuanian so colleagues can read them.
+
 Per rig:
 
 | Sensor | Unit | Description |
 | --- | --- | --- |
-| Status | — | `available`, `rented` or `disabled` |
-| Advertised hashrate | TH/s | Hashrate listed on MRR |
-| Hashrate 5 min | TH/s | Hashrate the rig reports |
-| Price | BTC/TH/d | Current listing price |
-| Credited | BTC | Sum of credits for this rig |
-| Refunds | BTC | Sum of refunds for this rig |
-| Net | BTC | Credited minus refunds |
-| Credited EUR | EUR | Credited converted at the configured BTC rate |
-| Refunds EUR | EUR | Refunds converted |
-| Net EUR | EUR | Net converted |
+| Būsena | — | `available`, `rented` or `disabled` |
+| Skelbiamas hashrate | TH/s | Hashrate listed on MRR |
+| Hashrate (5 min.) | TH/s | Hashrate the rig reports |
+| Kaina BTC/TH/d | BTC/TH/d | Current listing price per TH and day |
+| Kaina BTC/d | BTC/d | Listing price times the rig hashrate |
+| Kaina EUR/d | EUR/d | The same in EUR |
+| Įskaityta BTC | BTC | Sum of credits for this rig |
+| Įskaityta EUR | EUR | The same in EUR |
+| Grąžinta BTC | BTC | Sum of refunds |
+| Grąžinta EUR | EUR | The same in EUR |
+| Grynosios BTC | BTC | Credited minus refunds |
+| Grynosios EUR | EUR | The same in EUR |
 
 Attributes:
 
 - Status and hashrate sensors: `rig_id`, `owner`, `algorithm`, `online`, `rented`, `pool_status`, `region`, `devices`, `min_hours`, `max_hours`.
 - Earnings sensors: `transactions`, `pending`, `last_transaction`.
 
-Account level: **Balance** in BTC, **Balance EUR**, and **BTC price** (EUR).
+Account level: **Balansas BTC**, **Balansas EUR**, and **BTC kursas** (EUR).
 
 ## Requirements
 

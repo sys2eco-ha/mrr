@@ -14,18 +14,18 @@ from .const import DOMAIN
 from .coordinator import rig_price, to_th
 
 RIG_SENSORS = (
-    ("status", "Status"),
-    ("advertised", "Advertised hashrate"),
-    ("last_5min", "Hashrate 5 min"),
-    ("price", "Price"),
-    ("price_btc_day", "Price per day BTC"),
-    ("price_eur_day", "Price per day EUR"),
-    ("credited", "Credited"),
-    ("refunds", "Refunds"),
-    ("net", "Net"),
-    ("credited_eur", "Credited EUR"),
-    ("refunds_eur", "Refunds EUR"),
-    ("net_eur", "Net EUR"),
+    ("status", "Būsena"),
+    ("advertised", "Skelbiamas hashrate"),
+    ("last_5min", "Hashrate (5 min.)"),
+    ("price", "Kaina BTC/TH/d"),
+    ("price_btc_day", "Kaina BTC/d"),
+    ("price_eur_day", "Kaina EUR/d"),
+    ("credited", "Įskaityta BTC"),
+    ("refunds", "Grąžinta BTC"),
+    ("net", "Grynosios BTC"),
+    ("credited_eur", "Įskaityta EUR"),
+    ("refunds_eur", "Grąžinta EUR"),
+    ("net_eur", "Grynosios EUR"),
 )
 
 EUR_KEYS = {"credited_eur": "credited", "refunds_eur": "refunds", "net_eur": "net"}
@@ -38,8 +38,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for rig_id in coordinator.data["rigs"]
         for key, label in RIG_SENSORS
     ]
-    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance", "Balance", "BTC"))
-    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance_eur", "Balance EUR", "EUR"))
+    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance", "Balansas BTC", "BTC"))
+    entities.append(MrrBalanceSensor(coordinator, entry.entry_id, "balance_eur", "Balansas EUR", "EUR"))
     entities.append(MrrPriceSensor(coordinator, entry.entry_id))
     async_add_entities(entities)
 
@@ -199,7 +199,7 @@ class MrrPriceSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, entry_id):
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry_id}_btc_eur"
-        self._attr_name = "BTC price"
+        self._attr_name = "BTC kursas"
         self._attr_native_unit_of_measurement = "EUR"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_icon = "mdi:currency-btc"
