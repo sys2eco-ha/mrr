@@ -13,6 +13,7 @@ Per rig:
 | Sensor | Unit | Description |
 | --- | --- | --- |
 | Būsena | — | `available`, `rented` or `disabled` |
+| Išnuomota iki | timestamp | When the current rental ends. Empty when the rig is not rented |
 | Skelbiamas hashrate | TH/s | Hashrate listed on MRR |
 | Hashrate (5 min.) | TH/s | Hashrate the rig reports |
 | Kaina BTC/TH/d | BTC/TH/d | Current listing price per TH and day |
@@ -77,12 +78,16 @@ The BTC price comes from `api.coinbase.com`, with `api.coingecko.com` as a fallb
 
 ## Electricity per rig
 
-Open **Mining Rig Rentals → Configure → Elektra**. For every rig you can set:
+Open **Mining Rig Rentals → Configure → Elektra**:
 
-- **Galios skaitiklis** — any sensor that reports power in **W** (for example a Shelly or a DIN meter).
-- **Elektros kaina** — the price in **EUR/kWh** for that rig.
+1. Pick the rig from the list.
+2. Choose the meter from a dropdown of all `sensor.*` entities (any sensor that reports **W**, for example a Shelly or a DIN meter).
+3. Enter the electricity price in **EUR/kWh** for that rig.
+4. Save. Repeat for the other rigs.
 
-Leave both empty to skip the calculation. When set, the integration computes `Elektra EUR/d = W / 1000 * 24 * kaina` and `Pelnas EUR/d = Grynosios EUR - Elektra EUR/d`, so you can see whether a rig is worth running.
+When set, the integration computes `Elektra EUR/d = W / 1000 * 24 * kaina` and `Pelnas EUR/d = Grynosios EUR - Elektra EUR/d`, so you can see whether a rig is worth running.
+
+When the meter or the price is not set, the electricity sensors report **0** and profit equals the net earnings. A meter that reports `unavailable` also results in 0.
 
 ## EUR conversion
 
@@ -98,6 +103,7 @@ Open **Mining Rig Rentals** in *Settings → Devices & services* and select **Co
 - `Credited`, `Refunds` and `Net` sum the transactions the API returns in one response (currently up to 100). They cover that window, not the lifetime of the rig.
 - Earnings are grouped by the `rig` field of each transaction. A rig that no longer exists in the account has no device, so its transactions are not shown.
 - Disabled rigs are listed with the status `disabled`.
+- **Išnuomota iki** is derived from the remaining rental hours in the MRR status, so it is accurate to the last poll (10 minutes).
 - API credentials are stored in the Home Assistant config entry, never in this repository.
 
 ## Troubleshooting
