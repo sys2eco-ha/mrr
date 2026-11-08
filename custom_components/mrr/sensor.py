@@ -30,6 +30,7 @@ RIG_SENSORS = (
     ("refunds_eur", "Grąžinta EUR"),
     ("net_eur", "Grynosios EUR"),
     ("power", "Galios skaitiklis"),
+    ("energy_today", "Energija šiandien"),
     ("power_price", "Elektros kaina"),
     ("power_cost", "Elektra EUR/d"),
     ("profit", "Pelnas EUR/d"),
@@ -87,6 +88,9 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             self._attr_native_unit_of_measurement = "W"
             self._attr_device_class = SensorDeviceClass.POWER
             self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif key == "energy_today":
+            self._attr_native_unit_of_measurement = "kWh"
+            self._attr_device_class = SensorDeviceClass.ENERGY
         elif key == "power_price":
             self._attr_native_unit_of_measurement = "EUR/kWh"
             self._attr_device_class = SensorDeviceClass.MONETARY
@@ -122,7 +126,9 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
         rig = self._rig
         costs = self.coordinator.data.get("costs", {}).get(self._rig_id, {})
         if self._key == "power":
-            return costs.get("power")
+            return costs.get("power") or 0.0
+        if self._key == "energy_today":
+            return costs.get("energy") or 0.0
         if self._key == "power_price":
             return costs.get("price")
         if self._key == "power_cost":

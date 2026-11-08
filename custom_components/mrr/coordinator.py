@@ -6,7 +6,9 @@ import logging
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import (
     MrrError,
@@ -123,6 +125,10 @@ class MrrCoordinator(DataUpdateCoordinator):
         self.api_secret = entry.data[CONF_API_SECRET]
         self.rig_settings = entry.options.get("rigs", {}) or {}
         self.btc_eur: float | None = None
+        self.energy_store = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}.energy")
+        self.energy: dict = {}
+        self.energy_loaded = False
+        self.energy_dirty = False
 
     async def _async_update_data(self) -> dict:
         try:
@@ -157,25 +163,61 @@ class MrrCoordinator(DataUpdateCoordinator):
             data["balance"] = balance_btc(balance)
             data["earnings"] = earnings(transactions)
 
-        data["costs"] = {
-            rig_id: self._cost_for(rig_id) for rig_id in data["rigs"]
-        }
+        if not self.energy_loaded:
+            self.energy = await self.energy_store.async_load() or {}
+            self.energy_loaded = True
+
+        data["costs"] = {}
+        for rig_id in data["rigs"]:
+            data["costs"][rig_id] = self._cost_for(rig_id)
+
+        if self.energy_dirty:
+            self.energy_dirty = False
+            await self.energy_store.async_save(self.energy)
         return data
 
     def _cost_for(self, rig_id: str) -> dict:
-        """Read the rig power sensor and compute the daily electricity cost."""
+        """Compute the daily electricity cost from a power or energy sensor."""
         settings = self.rig_settings.get(rig_id) or {}
         entity = settings.get("power_entity")
-        price = settings.get("price")
+        price = float(settings.get("price") or 0.0)
+
         power = None
+        energy_today = None
         if entity:
             state = self.hass.states.get(entity)
             if state is not None and state.state not in ("unknown", "unavailable"):
+                unit = (state.attributes.get("unit_of_measurement") or "").strip()
                 try:
-                    power = float(state.state)
+                    value = float(state.state)
                 except ValueError:
-                    power = None
-        power = power if power is not None else 0.0
-        price = float(price) if price else 0.0
-        cost = round(power / 1000 * 24 * price, 2)
-        return {"power": power, "price": price, "cost": cost}
+                    value = None
+                if value is not None:
+                    if unit == "W":
+                        power = value
+                    elif unit in ("kWh", "Wh"):
+                        kwh = value if unit == "kWh" else value / 1000
+                        start = self._day_start(rig_id, kwh)
+                        energy_today = max(round(kwh - start, 4), 0.0)
+
+        if energy_today is not None:
+            cost = round(energy_today * price, 2)
+        else:
+            power = power if power is not None else 0.0
+            cost = round(power / 1000 * 24 * price, 2)
+        return {
+            "power": power,
+            "energy": energy_today,
+            "price": price,
+            "cost": cost,
+        }
+
+    def _day_start(self, rig_id: str, current: float) -> float:
+        """Return the energy value at the start of today, resetting at midnight."""
+        today = dt_util.now().date().isoformat()
+        record = self.energy.get(rig_id)
+        if not record or record.get("day") != today:
+            self.energy[rig_id] = {"day": today, "start": current}
+            self.energy_dirty = True
+            return current
+        return float(record.get("start", current))
