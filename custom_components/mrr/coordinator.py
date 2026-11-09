@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 
@@ -15,6 +16,7 @@ from .api import (
     account_balance,
     account_transactions,
     btc_eur_price,
+    get_rig,
     rigs_mine,
 )
 from .const import (
@@ -138,8 +140,10 @@ class MrrCoordinator(DataUpdateCoordinator):
         except MrrError as err:
             raise UpdateFailed(str(err)) from err
 
+        rigs = normalise(payload)
+        await self._async_fill_hashrate(rigs)
         data = {
-            "rigs": normalise(payload),
+            "rigs": rigs,
             "earnings": {},
             "balance": None,
             "btc_eur": self.btc_eur,
@@ -175,6 +179,26 @@ class MrrCoordinator(DataUpdateCoordinator):
             self.energy_dirty = False
             await self.energy_store.async_save(self.energy)
         return data
+
+    async def _async_fill_hashrate(self, rigs: dict) -> None:
+        """Fetch the missing 5 minute hashrate from the public rig endpoint."""
+        missing = [
+            rig_id
+            for rig_id, rig in rigs.items()
+            if not (rig.get("hashrate") or {}).get("last_5min")
+        ]
+        if not missing:
+            return
+        results = await asyncio.gather(
+            *(self.hass.async_add_executor_job(get_rig, rig_id) for rig_id in missing),
+            return_exceptions=True,
+        )
+        for rig_id, result in zip(missing, results):
+            if isinstance(result, Exception) or not isinstance(result, dict):
+                continue
+            hashrate = result.get("hashrate")
+            if hashrate:
+                rigs[rig_id] = {**rigs[rig_id], "hashrate": hashrate}
 
     def _cost_for(self, rig_id: str) -> dict:
         """Compute the daily electricity cost from a power or energy sensor."""

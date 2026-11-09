@@ -18,6 +18,7 @@ from .coordinator import rig_price, to_th
 RIG_SENSORS = (
     ("status", "Būsena"),
     ("rented_until", "Išnuomota iki"),
+    ("rented_until_text", "Išnuomota iki (data)"),
     ("advertised", "Skelbiamas hashrate"),
     ("last_5min", "Hashrate (5 min.)"),
     ("price", "Kaina BTC/TH/d"),
@@ -142,6 +143,16 @@ class MrrRigSensor(CoordinatorEntity, SensorEntity):
             return round(net * rate - cost, 2)
         if self._key == "status":
             return (rig.get("status") or {}).get("status")
+        if self._key == "rented_until_text":
+            status = rig.get("status") or {}
+            if not status.get("rented"):
+                return None
+            try:
+                hours = float(status.get("hours"))
+            except (TypeError, ValueError):
+                return None
+            end = datetime.now(UTC) + timedelta(hours=hours)
+            return end.astimezone().strftime("%Y-%m-%d %H:%M")
         if self._key == "rented_until":
             status = rig.get("status") or {}
             if not status.get("rented"):
